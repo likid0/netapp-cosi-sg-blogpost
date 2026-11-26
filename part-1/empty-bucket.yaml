@@ -1,0 +1,26 @@
+# empty-bucket.yaml  (developer, before deleting a Delete-policy claim)
+#
+# Trident deletes only EMPTY buckets. pod-writer leaves hello.txt behind, so
+# empty the bucket while its credentials still exist, then delete the
+# BucketAccess and BucketClaim. Same env mapping as pod-writer.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: empty-bucket
+  namespace: cosi-test
+spec:
+  restartPolicy: Never
+  containers:
+  - name: aws
+    image: public.ecr.aws/aws-cli/aws-cli:latest
+    command: ["/bin/sh", "-c"]
+    args:
+      - |
+        export AWS_ACCESS_KEY_ID=$COSI_S3_ACCESS_KEY_ID
+        export AWS_SECRET_ACCESS_KEY=$COSI_S3_ACCESS_SECRET_KEY
+        export AWS_DEFAULT_REGION=$COSI_S3_REGION
+        aws --endpoint-url "$COSI_S3_ENDPOINT" --no-verify-ssl \
+          s3 rm "s3://$COSI_S3_BUCKET_ID/" --recursive
+    envFrom:
+    - secretRef:
+        name: my-bucket-creds

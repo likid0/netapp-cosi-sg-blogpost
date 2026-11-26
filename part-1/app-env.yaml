@@ -1,0 +1,59 @@
+# app-env.yaml
+#
+# How a real application should consume a COSI bucket: map the Secret's
+# COSI_S3_* fields onto the standard AWS SDK environment variables with
+# env + secretKeyRef. The app then needs no COSI-specific code, and
+# Kubernetes holds the pod back until COSI has written the Secret.
+#
+# The lab S3 endpoint uses a self-signed certificate, so this pod trusts it
+# via AWS_CA_BUNDLE pointing at a mounted CA bundle (ConfigMap sg-s3-ca).
+# Against a publicly trusted CA you can drop the volume, the mount and
+# AWS_CA_BUNDLE. See the README for how to build the sg-s3-ca ConfigMap.
+#
+# COSI_S3_BUCKET_ID has no AWS SDK variable of its own; it is the
+# application's own setting, mapped here to BUCKET.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-env
+  namespace: cosi-test
+spec:
+  restartPolicy: Never
+  containers:
+  - name: app
+    image: public.ecr.aws/aws-cli/aws-cli:latest
+    command: ["/bin/sh", "-c"]
+    args:
+      - |
+        echo "reading s3://$BUCKET/hello.txt as a plain AWS SDK client"
+        aws s3 ls "s3://$BUCKET/"
+        aws s3 cp "s3://$BUCKET/hello.txt" -
+    env:
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef: { name: my-bucket-creds, key: COSI_S3_ACCESS_KEY_ID }
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef: { name: my-bucket-creds, key: COSI_S3_ACCESS_SECRET_KEY }
+    - name: AWS_ENDPOINT_URL_S3
+      valueFrom:
+        secretKeyRef: { name: my-bucket-creds, key: COSI_S3_ENDPOINT }
+    - name: AWS_REGION
+      valueFrom:
+        secretKeyRef: { name: my-bucket-creds, key: COSI_S3_REGION }
+    - name: BUCKET
+      valueFrom:
+        secretKeyRef: { name: my-bucket-creds, key: COSI_S3_BUCKET_ID }
+    - name: AWS_CA_BUNDLE
+      value: /etc/ssl/sg/ca.pem
+    volumeMounts:
+    - name: sg-ca
+      mountPath: /etc/ssl/sg
+      readOnly: true
+  volumes:
+  - name: sg-ca
+    configMap:
+      name: sg-s3-ca
+      items:
+      - key: ca.pem
+        path: ca.pem

@@ -1,0 +1,12 @@
+# claim.yaml  (developer, in their own namespace)
+#
+# Requests a bucket from the administrator's bucket class. Within a few
+# seconds the claim is ready and the bucket exists in the StorageGRID tenant.
+apiVersion: objectstorage.k8s.io/v1alpha2
+kind: BucketClaim
+metadata:
+  name: my-first-bucket
+  namespace: cosi-test
+spec:
+  bucketClassName: sg-bucket-class
+  protocols: ["S3"]

@@ -1,0 +1,35 @@
+# pod-writer.yaml
+#
+# Minimal test pod from Part 1 of the COSI + Trident + StorageGRID post.
+# It loads the whole COSI credentials Secret into its environment with
+# envFrom, maps COSI_S3_* onto the AWS_* variables the CLI expects, uploads
+# hello.txt, and lists the bucket.
+#
+# This is a lab convenience pod, not a model for real apps. See app-env.yaml
+# for the pattern a real application should use (standard AWS SDK variables,
+# no COSI-specific code). This pod passes --no-verify-ssl because the lab S3
+# endpoint uses a self-signed certificate; drop that flag against a trusted CA.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-writer
+  namespace: cosi-test
+spec:
+  restartPolicy: Never
+  containers:
+  - name: aws
+    image: public.ecr.aws/aws-cli/aws-cli:latest
+    command: ["/bin/sh", "-c"]
+    args:
+      - |
+        export AWS_ACCESS_KEY_ID=$COSI_S3_ACCESS_KEY_ID
+        export AWS_SECRET_ACCESS_KEY=$COSI_S3_ACCESS_SECRET_KEY
+        export AWS_DEFAULT_REGION=$COSI_S3_REGION
+        echo 'hello from COSI' > /tmp/hello.txt
+        aws --endpoint-url "$COSI_S3_ENDPOINT" --no-verify-ssl \
+          s3 cp /tmp/hello.txt "s3://$COSI_S3_BUCKET_ID/hello.txt"
+        aws --endpoint-url "$COSI_S3_ENDPOINT" --no-verify-ssl \
+          s3 ls "s3://$COSI_S3_BUCKET_ID/"
+    envFrom:
+    - secretRef:
+        name: my-bucket-creds

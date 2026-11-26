@@ -1,0 +1,45 @@
+{
+  "_comment": [
+    "The S3 group policy Trident's StorageGRID driver generates for a ReadWrite",
+    "BucketAccess. One statement at the bucket level, one at the object level,",
+    "both scoped to only the buckets in the access and nothing else. Replace",
+    "<bucket-id> with the real bucket name from the Secret's COSI_S3_BUCKET_ID",
+    "field (trident-bc-<bucketclaim-uid>). A ReadOnly access drops PutObject,",
+    "DeleteObject, DeleteObjectVersion, the multipart-upload actions and the",
+    "object-tagging write actions, leaving only the list and read actions."
+  ],
+  "Statement": [
+    {
+      "Sid": "BucketLevel0",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:ListBucketVersions",
+        "s3:ListBucketMultipartUploads",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": [
+        "arn:aws:s3:::<bucket-id>"
+      ]
+    },
+    {
+      "Sid": "ObjectLevel0",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:DeleteObjectVersion",
+        "s3:ListMultipartUploadParts",
+        "s3:AbortMultipartUpload",
+        "s3:GetObjectTagging",
+        "s3:PutObjectTagging",
+        "s3:DeleteObjectTagging"
+      ],
+      "Resource": [
+        "arn:aws:s3:::<bucket-id>/*"
+      ]
+    }
+  ]
+}

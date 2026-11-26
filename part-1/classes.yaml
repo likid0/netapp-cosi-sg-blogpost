@@ -1,0 +1,25 @@
+# classes.yaml  (administrator, once per cluster)
+#
+# The two classes developers pick from. The BucketClass finds its StorageGRID
+# tenant through `selector`, which matches the label on the TridentObjectStore.
+# deletionPolicy: Delete removes the StorageGRID bucket once empty when its
+# claim is deleted; use Retain for data that must outlive its claim.
+apiVersion: objectstorage.k8s.io/v1alpha2
+kind: BucketClass
+metadata:
+  name: sg-bucket-class
+spec:
+  driverName: cosi.trident.netapp.io
+  deletionPolicy: Delete
+  parameters:
+    objectStoreType: "storage-grid"
+    selector: "backend=storagegrid"
+---
+apiVersion: objectstorage.k8s.io/v1alpha2
+kind: BucketAccessClass
+metadata:
+  name: sg-access-class
+spec:
+  driverName: cosi.trident.netapp.io
+  authenticationType: Key
+  multiBucketAccess: MultipleBuckets

@@ -1,0 +1,39 @@
+# objectstore.yaml  (administrator, once per cluster)
+#
+# Connects Trident to one StorageGRID tenant. The Secret holds the tenant's
+# root credentials; the TridentObjectStore points Trident at the tenant and
+# at the two addresses it uses (Tenant Management API + S3 load balancer).
+#
+# Fill in the placeholders:
+#   <tenant-root-password>  the tenant's root password (from Grid Manager)
+#   <account-id>            the 20-digit tenant account ID
+#   <admin-node>            an Admin Node hostname (Tenant Management API)
+#   <s3-endpoint>           the S3 load balancer endpoint hostname
+#
+# In a lab with self-signed certificates, add `insecureSkipVerify: true` to
+# the TridentObjectStore spec.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: storagegrid-cosi-creds
+  namespace: trident
+type: Opaque
+stringData:
+  username: root
+  password: <tenant-root-password>
+---
+apiVersion: trident.netapp.io/v1
+kind: TridentObjectStore
+metadata:
+  name: storagegrid-k8sdemo
+  namespace: trident
+spec:
+  objectStoreDriver: storage-grid
+  accountId: "<account-id>"                   # the tenant's account ID
+  managementEndpoint: https://<admin-node>/   # Tenant Management API, used by Trident
+  s3Endpoint: https://<s3-endpoint>:10443/    # S3 load balancer endpoint, used by applications
+  credentials:
+    secretName: storagegrid-cosi-creds
+  labels:
+    backend: storagegrid                      # bucket classes find this store by label
+  # insecureSkipVerify: true                  # lab only: self-signed S3/API certs
